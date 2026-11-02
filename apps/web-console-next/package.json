@@ -1,0 +1,18 @@
+{
+  "name": "@saas/web-console-next",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "@saas/eslint-config": "workspace:*",
+    "@saas/tsconfig": "workspace:*",
+    "eslint": "^9.27.0",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.14.0"
+  }
+}

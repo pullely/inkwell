@@ -1,0 +1,86 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: web-console-next
+  description: The Inkwell console's URL, kept as a Worker that 308-redirects every path to its place in the Payload admin (apps/cms) of the same environment
+spec:
+  docs:
+    overview: docs/overview.md
+    pages:
+      - { path: docs/architecture.md, role: architecture }
+      - { path: docs/runbook.md, role: runbook }
+  type: cloudflare-workers-assets-turbo
+  lifecycle: production
+  owner: platform
+  domain: starter-ui
+  path: apps/web-console-next
+  # Its own lane per environment (execution.lanes in intent.yaml), as when it
+  # was the Next.js console.
+  lane: isolated
+  # The smoke follows the redirect into the CMS's sign-in page, so the CMS
+  # must be live first.
+  dependsOn:
+    - component: cms
+  subscribe:
+    environments:
+      - name: dev
+        profile: verify
+      - name: stage
+        profile: verify
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+          - profile: deploy
+            when:
+              triggerRef: github-dispatch
+      - name: prod
+        profile: verify
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+          - profile: deploy
+            when:
+              triggerRef: github-dispatch
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+
+    workspaceDir: ../..
+    appDir: .
+
+    turboFilter: "@saas/web-console-next"
+    wranglerConfig: wrangler.jsonc
+
+    # A plain Worker compiled by tsc (no static assets: dist/ only has to exist
+    # for the composition's output check).
+    workerEntrypoint: dist/worker.js
+    assetsDir: dist
+
+    # Worker is named per-env (inkwell-web-console-next-{dev,stage,prod}),
+    # matching the prior Pages-project naming convention so the cutover in
+    # Task 0083 only needs to repoint the custom domain.
+    workerName: inkwell-web-console-next
+    environmentAwareWorkerName: true
+
+    # The account's workers.dev subdomain; exposed to the smoke step as
+    # ${WORKERS_DEV_SUBDOMAIN} and used to build ${DEPLOYED_URL}.
+    workersDevSubdomain: rahulvarghesepullely
+
+    installCommand: pnpm install --frozen-lockfile
+    # Compile, then run tests/web-console-next (the redirect map) in this lane:
+    # that component's own lane is quick-check, which runs no tests.
+    buildCommand: pnpm run build && pnpm --filter @saas/web-console-next-tests test
+
+    # Smoke: an old console page answers 308 to its place in the CMS of the
+    # same environment, query kept, and the old /login, followed, is the
+    # admin's Inkwell sign-in view (the page payload names InkwellSignIn; the form
+    # itself renders in the browser).
+    smokeCommand: "out=$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' \"${DEPLOYED_URL}/orgs/x/settings/billing?checkout=complete\") && [ \"${out}\" = \"308 https://inkwell-cms-${ORUN_ENVIRONMENT}.${WORKERS_DEV_SUBDOMAIN}.workers.dev/admin/organization/billing?checkout=complete\" ] && html=$(curl -sfL \"${DEPLOYED_URL}/login\") && echo \"${html}\" | grep -q 'InkwellSignIn'"
+  labels:
+    team: platform
+    layer: delivery
+    surface: web-console-next
+    runtime: cloudflare
+# orun: redeploy 06-console as_47ebfbb1377942ecab94

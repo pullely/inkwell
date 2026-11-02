@@ -1,0 +1,14 @@
+{
+  "cloudflare-hyperdrive-cms/stage": {
+    "hyperdrive_id": "00000000000000000000000000000011"
+  },
+  "cloudflare-hyperdrive-cms/prod": {
+    "hyperdrive_id": "00000000000000000000000000000013"
+  },
+  "cloudflare-r2-cms/stage": {
+    "bucket_name": "stg-inkwell-cms-media-stage"
+  },
+  "cloudflare-r2-cms/prod": {
+    "bucket_name": "prod-inkwell-cms-media-prod"
+  }
+}
