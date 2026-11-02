@@ -1,0 +1,8 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // The console's URL redirects to the CMS (src/worker.ts). The deploy names
+  // it per environment (inkwell-web-console-next-<env>).
+  "name": "inkwell-web-console-next",
+  "main": "dist/worker.js",
+  "compatibility_date": "2024-12-30"
+}
